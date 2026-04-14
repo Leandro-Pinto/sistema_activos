@@ -3,8 +3,8 @@ const router = express.Router();
 
 const mantenimientosController = require("../controllers/mantenimientosController");
 
-router.post("/mantenimientos", mantenimientosController.crearMantenimiento);
-router.get("/mantenimientos", mantenimientosController.obtenerMantenimientos);
+router.post("/", mantenimientosController.crearMantenimiento);
+router.get("/", mantenimientosController.obtenerMantenimientos);
 
 
 module.exports = router;

@@ -7,28 +7,28 @@ const role = require("../middleware/roleMiddleware");
 
 //SOLO ADMIN crea activos
 router.post(
-  "/activos",
+  "/",
   auth,
   role(["admin"]),
   activosController.crearActivo
 );
 // ELIMINAR ACTIVO (SOLO ADMIN)
 router.delete(
-  "/activos/:id",
+  "/:id",
   auth,
   role(["admin"]),
   activosController.eliminarActivo
 );
 // EDITAR ACTIVO (ADMIN)
 router.put(
-  "/activos/:id",
+  "/:id",
   auth,
   role(["admin"]),
   activosController.actualizarActivo
 );
 //ADMIN y TECNICO pueden ver activos
 router.get(
-  "/activos",
+  "/",
   auth,
   role(["admin", "tecnico"]),
   activosController.listarActivos
@@ -36,7 +36,7 @@ router.get(
 
 //TODOS pueden buscar
 router.get(
-  "/activos/buscar/:codigo",
+  "/buscar/:codigo",
   auth,
   role(["admin", "tecnico", "usuario"]),
   activosController.buscarActivo
