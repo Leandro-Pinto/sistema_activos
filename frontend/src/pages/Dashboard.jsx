@@ -219,7 +219,6 @@ function Dashboard() {
     </div>
   );
 }
-}
 
 // Funciones utilitarias para estilos
 const getPrioridadStyle = (prioridad) => {
