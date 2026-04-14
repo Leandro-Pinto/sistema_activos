@@ -2,219 +2,333 @@ import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
+import StatsCard from "../components/StatsCard";
+import { ChartActivosPorEstado, ChartActivosPorTipo, ChartIncidenciasPorPrioridad, ChartMarcasPorActivos } from "../components/Charts";
 
 function Dashboard() {
   const { logout, usuario } = useAuth();
 
+  const [estadisticas, setEstadisticas] = useState(null);
   const [activos, setActivos] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [busqueda, setBusqueda] = useState("");
+  const [mostrarTabla, setMostrarTabla] = useState(false);
 
-  const [form, setForm] = useState({
-    codigo: "",
-    tipo: "",
-    marca: "",
-    modelo: "",
-    estado: "activo",
-    ubicacion: "",
-    responsable: ""
-  });
-
-  const [editId, setEditId] = useState(null);
-
-  // 🔐 CARGAR ACTIVOS (PROTEGIDO)
-  const cargarActivos = async () => {
-    const token = localStorage.getItem("token");
-
-    if (!token) {
-      console.warn("⚠️ No hay token, no se llama API");
-      setLoading(false);
-      return;
-    }
-
-    try {
-      setLoading(true);
-      const data = await api("/activos");
-      setActivos(data);
-    } catch (error) {
-      toast.error("Error al cargar activos");
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // CARGAR ESTADÍSTICAS
   useEffect(() => {
+    const cargarEstadisticas = async () => {
+      try {
+        setLoading(true);
+        const data = await api("/dashboard");
+        setEstadisticas(data);
+      } catch (error) {
+        toast.error("Error al cargar estadísticas");
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    cargarEstadisticas();
+  }, []);
+
+  // CARGAR ACTIVOS
+  useEffect(() => {
+    const cargarActivos = async () => {
+      try {
+        const data = await api("/activos");
+        setActivos(data);
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
     cargarActivos();
   }, []);
 
-  // INPUTS
-  const handleChange = (e) => {
-    setForm({
-      ...form,
-      [e.target.name]: e.target.value
-    });
-  };
-
-  // CREAR / EDITAR
-  const guardarActivo = async () => {
-    const { codigo, tipo, marca, modelo } = form;
-
-    if (!codigo || !tipo || !marca || !modelo) {
-      toast.warning("Completa los campos obligatorios");
-      return;
-    }
-
-    try {
-      if (editId) {
-        await api(`/activos/${editId}`, "PUT", form);
-        toast.success("Activo actualizado ✏️");
-      } else {
-        await api("/activos", "POST", form);
-        toast.success("Activo creado ✅");
-      }
-
-      setForm({
-        codigo: "",
-        tipo: "",
-        marca: "",
-        modelo: "",
-        estado: "activo",
-        ubicacion: "",
-        responsable: ""
-      });
-
-      setEditId(null);
-      cargarActivos();
-
-    } catch (error) {
-      toast.error(error.message);
-    }
-  };
-
-  // ELIMINAR
-  const eliminarActivo = async (id) => {
-    if (!window.confirm("¿Eliminar activo?")) return;
-
-    try {
-      await api(`/activos/${id}`, "DELETE");
-      toast.success("Activo eliminado 🗑️");
-      cargarActivos();
-    } catch (error) {
-      toast.error("Error al eliminar");
-    }
-  };
-
-  // EDITAR
-  const editarActivo = (a) => {
-    setForm({
-      codigo: a.codigo || "",
-      tipo: a.tipo || "",
-      marca: a.marca || "",
-      modelo: a.modelo || "",
-      estado: a.estado || "activo",
-      ubicacion: a.ubicacion || "",
-      responsable: a.responsable || ""
-    });
-
-    setEditId(a.id);
-  };
-
-  // BUSCADOR SEGURO
-  const filtrados = activos.filter(a =>
-    a.codigo?.toLowerCase().includes(busqueda.toLowerCase()) ||
-    a.tipo?.toLowerCase().includes(busqueda.toLowerCase()) ||
-    a.marca?.toLowerCase().includes(busqueda.toLowerCase()) ||
-    a.modelo?.toLowerCase().includes(busqueda.toLowerCase())
-  );
-
-  // 🔐 VALIDAR USUARIO
   if (!usuario) {
-    return <p>Cargando usuario...</p>;
+    return <p style={{ color: "#e2e8f0" }}>Cargando usuario...</p>;
   }
 
   return (
-    <div>
+    <div style={styles.container}>
       {/* HEADER */}
-      <div style={{ display: "flex", justifyContent: "space-between" }}>
-        <h2>💻 Sistema de Activos</h2>
-
+      <div style={styles.header}>
         <div>
-          <span>{usuario?.rol}</span>
-          <button onClick={logout}>Cerrar sesión</button>
+          <h1 style={styles.titulo}>📊 Dashboard Avanzado</h1>
+          <p style={styles.subtitulo}>Bienvenido, {usuario?.email}</p>
+        </div>
+        <div style={styles.headerRight}>
+          <span style={styles.rol}>👤 {usuario?.rol.toUpperCase()}</span>
+          <button onClick={logout} style={styles.btnLogout}>Cerrar Sesión</button>
         </div>
       </div>
 
-      {/* BUSCADOR */}
-      <input
-        type="text"
-        placeholder="Buscar activo..."
-        value={busqueda}
-        onChange={(e) => setBusqueda(e.target.value)}
-        style={{ marginBottom: "10px", padding: "8px", width: "300px" }}
-      />
-
-      {/* FORMULARIO */}
-      <div style={{
-        background: "#1e293b",
-        padding: "20px",
-        borderRadius: "10px",
-        marginBottom: "20px"
-      }}>
-        <h3>{editId ? "✏️ Editar Activo" : "➕ Registrar Activo"}</h3>
-
-        <input name="codigo" placeholder="Código" value={form.codigo} onChange={handleChange} />
-        <input name="tipo" placeholder="Tipo" value={form.tipo} onChange={handleChange} />
-        <input name="marca" placeholder="Marca" value={form.marca} onChange={handleChange} />
-        <input name="modelo" placeholder="Modelo" value={form.modelo} onChange={handleChange} />
-        <input name="estado" placeholder="Estado" value={form.estado} onChange={handleChange} />
-        <input name="ubicacion" placeholder="Ubicación" value={form.ubicacion} onChange={handleChange} />
-        <input name="responsable" placeholder="Responsable" value={form.responsable} onChange={handleChange} />
-
-        <button onClick={guardarActivo}>
-          {editId ? "Actualizar" : "Crear"}
-        </button>
-      </div>
-
-      {/* TABLA */}
+      {/* CONTENIDO PRINCIPAL */}
       {loading ? (
-        <p>Cargando...</p>
+        <p style={{ color: "#94a3b8" }}>⏳ Cargando estadísticas...</p>
+      ) : estadisticas ? (
+        <>
+          {/* TARJETAS DE RESUMEN */}
+          <div style={styles.cardsGrid}>
+            <StatsCard
+              titulo="Total de Activos"
+              valor={estadisticas.resumen.totalActivos}
+              icono="💻"
+              color="#0891b2"
+            />
+            <StatsCard
+              titulo="Incidencias"
+              valor={estadisticas.resumen.totalIncidencias}
+              icono="⚠️"
+              color="#f97316"
+            />
+            <StatsCard
+              titulo="Mantenimientos"
+              valor={estadisticas.resumen.totalMantenimientos}
+              icono="🔧"
+              color="#10b981"
+            />
+            <StatsCard
+              titulo="Esta Semana"
+              valor={estadisticas.resumen.mantenimientosEstaSemana}
+              icono="📅"
+              color="#8b5cf6"
+            />
+          </div>
+
+          {/* GRÁFICAS */}
+          <div style={styles.chartsContainer}>
+            <div style={styles.chartRow}>
+              <div style={styles.chartCol}>
+                <ChartActivosPorEstado data={estadisticas.graficas.activosPorEstado} />
+              </div>
+              <div style={styles.chartCol}>
+                <ChartActivosPorTipo data={estadisticas.graficas.activosPorTipo} />
+              </div>
+            </div>
+
+            <div style={styles.chartRow}>
+              <div style={styles.chartCol}>
+                <ChartIncidenciasPorPrioridad data={estadisticas.graficas.incidenciasPorPrioridad} />
+              </div>
+              <div style={styles.chartCol}>
+                <ChartMarcasPorActivos data={estadisticas.graficas.activosPorMarca} />
+              </div>
+            </div>
+          </div>
+
+          {/* ÚLTIMAS INCIDENCIAS */}
+          <div style={styles.cardList}>
+            <h3 style={styles.cardTitle}>🚨 Últimas Incidencias</h3>
+            {estadisticas.recientes.ultimasIncidencias.length > 0 ? (
+              <table style={styles.tablaIncidencias}>
+                <thead>
+                  <tr style={styles.tableHeader}>
+                    <th>Código Activo</th>
+                    <th>Descripción</th>
+                    <th>Prioridad</th>
+                    <th>Estado</th>
+                    <th>Fecha</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {estadisticas.recientes.ultimasIncidencias.map(inc => (
+                    <tr key={inc.id} style={styles.tableRow}>
+                      <td style={styles.tableCellCode}>{inc.codigo}</td>
+                      <td style={styles.tableCellDesc}>{inc.descripcion.substring(0, 50)}...</td>
+                      <td style={getPrioridadStyle(inc.prioridad)}>{inc.prioridad}</td>
+                      <td style={getEstadoStyle(inc.estado)}>{inc.estado}</td>
+                      <td>{new Date(inc.created_at).toLocaleDateString()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <p style={{ color: "#94a3b8" }}>No hay incidencias</p>
+            )}
+          </div>
+
+          {/* BOTÓN PARA VER TABLA DE ACTIVOS */}
+          <button onClick={() => setMostrarTabla(!mostrarTabla)} style={styles.btnTabla}>
+            {mostrarTabla ? "Ocultar" : "Ver"} Lista Completa de Activos
+          </button>
+
+          {mostrarTabla && (
+            <div style={styles.cardList}>
+              <h3 style={styles.cardTitle}>📋 Todos los Activos ({activos.length})</h3>
+              <table style={styles.tablaActivos}>
+                <thead>
+                  <tr style={styles.tableHeader}>
+                    <th>Código</th>
+                    <th>Tipo</th>
+                    <th>Marca</th>
+                    <th>Modelo</th>
+                    <th>Estado</th>
+                    <th>Ubicación</th>
+                    <th>Responsable</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {activos.map(a => (
+                    <tr key={a.id} style={styles.tableRow}>
+                      <td style={styles.tableCellCode}>{a.codigo}</td>
+                      <td>{a.tipo}</td>
+                      <td>{a.marca}</td>
+                      <td>{a.modelo}</td>
+                      <td style={getEstadoStyle(a.estado)}>{a.estado}</td>
+                      <td>{a.ubicacion}</td>
+                      <td>{a.responsable}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </>
       ) : (
-        <table border="1" cellPadding="10">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Código</th>
-              <th>Tipo</th>
-              <th>Marca</th>
-              <th>Modelo</th>
-              <th>Estado</th>
-              <th>Ubicación</th>
-              <th>Responsable</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtrados.map(a => (
-              <tr key={a.id}>
-                <td>{a.id}</td>
-                <td>{a.codigo}</td>
-                <td>{a.tipo}</td>
-                <td>{a.marca}</td>
-                <td>{a.modelo}</td>
-                <td>{a.estado}</td>
-                <td>{a.ubicacion}</td>
-                <td>{a.responsable}</td>
-                <td>
-                  <button onClick={() => editarActivo(a)}>✏️</button>
-                  <button onClick={() => eliminarActivo(a.id)}>🗑️</button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <p style={{ color: "#94a3b8" }}>Error al cargar datos</p>
       )}
     </div>
   );
 }
+
+// Funciones utilitarias para estilos
+const getPrioridadStyle = (prioridad) => {
+  const colors = {
+    alta: { color: "#f87171", fontWeight: "bold" },
+    media: { color: "#fbbf24", fontWeight: "bold" },
+    baja: { color: "#86efac", fontWeight: "bold" }
+  };
+  return colors[prioridad] || { color: "#94a3b8" };
+};
+
+const getEstadoStyle = (estado) => {
+  const colors = {
+    activo: { color: "#86efac" },
+    inactivo: { color: "#f87171" },
+    mantenimiento: { color: "#fbbf24" },
+    pendiente: { color: "#f97316" },
+    resuelto: { color: "#10b981" }
+  };
+  return colors[estado] || { color: "#94a3b8" };
+};
+
+const styles = {
+  container: {
+    padding: "30px",
+    background: "#0f172a",
+    minHeight: "100vh",
+    color: "#e2e8f0",
+    fontFamily: "'Inter', sans-serif"
+  },
+  header: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: "30px",
+    paddingBottom: "20px",
+    borderBottom: "2px solid #334155"
+  },
+  titulo: {
+    fontSize: "28px",
+    margin: "0",
+    color: "#f1f5f9"
+  },
+  subtitulo: {
+    fontSize: "14px",
+    color: "#94a3b8",
+    margin: "5px 0 0 0"
+  },
+  headerRight: {
+    display: "flex",
+    gap: "15px",
+    alignItems: "center"
+  },
+  rol: {
+    background: "#1e293b",
+    padding: "8px 15px",
+    borderRadius: "8px",
+    fontSize: "12px",
+    fontWeight: "600"
+  },
+  btnLogout: {
+    background: "#dc2626",
+    color: "white",
+    border: "none",
+    padding: "8px 15px",
+    borderRadius: "8px",
+    cursor: "pointer",
+    fontWeight: "600"
+  },
+  cardsGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+    gap: "15px",
+    marginBottom: "30px"
+  },
+  chartsContainer: {
+    marginBottom: "30px"
+  },
+  chartRow: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(500px, 1fr))",
+    gap: "20px",
+    marginBottom: "20px"
+  },
+  chartCol: {
+    minWidth: "400px"
+  },
+  cardList: {
+    background: "#1e293b",
+    padding: "20px",
+    borderRadius: "12px",
+    border: "1px solid #334155",
+    marginBottom: "20px",
+    marginTop: "20px"
+  },
+  cardTitle: {
+    color: "#e2e8f0",
+    margin: "0 0 15px 0",
+    fontSize: "18px",
+    fontWeight: "600"
+  },
+  tablaIncidencias: {
+    width: "100%",
+    borderCollapse: "collapse",
+    fontSize: "14px"
+  },
+  tablaActivos: {
+    width: "100%",
+    borderCollapse: "collapse",
+    fontSize: "13px"
+  },
+  tableHeader: {
+    background: "#334155",
+    color: "#e2e8f0"
+  },
+  tableRow: {
+    borderBottom: "1px solid #334155",
+    ":hover": { background: "#0f172a" }
+  },
+  tableCellCode: {
+    fontWeight: "600",
+    color: "#38bdf8"
+  },
+  tableCellDesc: {
+    maxWidth: "300px",
+    overflow: "hidden",
+    textOverflow: "ellipsis"
+  },
+  btnTabla: {
+    background: "#38bdf8",
+    color: "#0f172a",
+    border: "none",
+    padding: "10px 20px",
+    borderRadius: "8px",
+    cursor: "pointer",
+    fontWeight: "600",
+    marginTop: "20px"
+  }
+};
 
 export default Dashboard;
