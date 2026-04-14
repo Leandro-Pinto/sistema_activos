@@ -3,8 +3,6 @@ const API_URL = "http://localhost:3000";
 const api = async (endpoint, method = "GET", body = null) => {
   const token = localStorage.getItem("token");
 
-  console.log("TOKEN ENVIADO:", token);
-
   const res = await fetch(API_URL + endpoint, {
     method,
     headers: {

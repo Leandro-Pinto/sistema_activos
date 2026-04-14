@@ -11,6 +11,7 @@ function Dashboard() {
   const [estadisticas, setEstadisticas] = useState(null);
   const [activos, setActivos] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [mostrarTabla, setMostrarTabla] = useState(false);
 
   // CARGAR ESTADÍSTICAS
@@ -18,11 +19,21 @@ function Dashboard() {
     const cargarEstadisticas = async () => {
       try {
         setLoading(true);
+        setError(null);
         const data = await api("/dashboard");
-        setEstadisticas(data);
+        console.log("✅ Estadísticas cargadas:", data);
+        
+        // Validar estructura de datos
+        if (data && data.resumen && data.graficas) {
+          setEstadisticas(data);
+        } else {
+          setError("Datos incompletos del servidor");
+          console.error("Estructura incompleta:", data);
+        }
       } catch (error) {
-        toast.error("Error al cargar estadísticas");
-        console.error(error);
+        console.error("❌ Error al cargar estadísticas:", error);
+        setError(error.message || "Error al cargar estadísticas");
+        toast.error("Error al cargar estadísticas: " + (error.message || "Intenta nuevamente"));
       } finally {
         setLoading(false);
       }
@@ -36,9 +47,10 @@ function Dashboard() {
     const cargarActivos = async () => {
       try {
         const data = await api("/activos");
-        setActivos(data);
+        setActivos(Array.isArray(data) ? data : []);
       } catch (error) {
-        console.error(error);
+        console.error("Error cargando activos:", error);
+        setActivos([]);
       }
     };
 
@@ -64,33 +76,41 @@ function Dashboard() {
       </div>
 
       {/* CONTENIDO PRINCIPAL */}
-      {loading ? (
+      {loading && (
         <p style={{ color: "#94a3b8" }}>⏳ Cargando estadísticas...</p>
-      ) : estadisticas ? (
+      )}
+
+      {error && (
+        <div style={styles.errorBox}>
+          <p>❌ {error}</p>
+        </div>
+      )}
+
+      {!loading && !error && estadisticas && (
         <>
           {/* TARJETAS DE RESUMEN */}
           <div style={styles.cardsGrid}>
             <StatsCard
               titulo="Total de Activos"
-              valor={estadisticas.resumen.totalActivos}
+              valor={estadisticas?.resumen?.totalActivos || 0}
               icono="💻"
               color="#0891b2"
             />
             <StatsCard
               titulo="Incidencias"
-              valor={estadisticas.resumen.totalIncidencias}
+              valor={estadisticas?.resumen?.totalIncidencias || 0}
               icono="⚠️"
               color="#f97316"
             />
             <StatsCard
               titulo="Mantenimientos"
-              valor={estadisticas.resumen.totalMantenimientos}
+              valor={estadisticas?.resumen?.totalMantenimientos || 0}
               icono="🔧"
               color="#10b981"
             />
             <StatsCard
               titulo="Esta Semana"
-              valor={estadisticas.resumen.mantenimientosEstaSemana}
+              valor={estadisticas?.resumen?.mantenimientosEstaSemana || 0}
               icono="📅"
               color="#8b5cf6"
             />
@@ -100,19 +120,19 @@ function Dashboard() {
           <div style={styles.chartsContainer}>
             <div style={styles.chartRow}>
               <div style={styles.chartCol}>
-                <ChartActivosPorEstado data={estadisticas.graficas.activosPorEstado} />
+                <ChartActivosPorEstado data={estadisticas?.graficas?.activosPorEstado || []} />
               </div>
               <div style={styles.chartCol}>
-                <ChartActivosPorTipo data={estadisticas.graficas.activosPorTipo} />
+                <ChartActivosPorTipo data={estadisticas?.graficas?.activosPorTipo || []} />
               </div>
             </div>
 
             <div style={styles.chartRow}>
               <div style={styles.chartCol}>
-                <ChartIncidenciasPorPrioridad data={estadisticas.graficas.incidenciasPorPrioridad} />
+                <ChartIncidenciasPorPrioridad data={estadisticas?.graficas?.incidenciasPorPrioridad || []} />
               </div>
               <div style={styles.chartCol}>
-                <ChartMarcasPorActivos data={estadisticas.graficas.activosPorMarca} />
+                <ChartMarcasPorActivos data={estadisticas?.graficas?.activosPorMarca || []} />
               </div>
             </div>
           </div>
@@ -120,7 +140,7 @@ function Dashboard() {
           {/* ÚLTIMAS INCIDENCIAS */}
           <div style={styles.cardList}>
             <h3 style={styles.cardTitle}>🚨 Últimas Incidencias</h3>
-            {estadisticas.recientes.ultimasIncidencias.length > 0 ? (
+            {estadisticas?.recientes?.ultimasIncidencias && estadisticas.recientes.ultimasIncidencias.length > 0 ? (
               <table style={styles.tablaIncidencias}>
                 <thead>
                   <tr style={styles.tableHeader}>
@@ -135,10 +155,10 @@ function Dashboard() {
                   {estadisticas.recientes.ultimasIncidencias.map(inc => (
                     <tr key={inc.id} style={styles.tableRow}>
                       <td style={styles.tableCellCode}>{inc.codigo}</td>
-                      <td style={styles.tableCellDesc}>{inc.descripcion.substring(0, 50)}...</td>
+                      <td style={styles.tableCellDesc}>{inc.descripcion?.substring(0, 50) || "N/A"}...</td>
                       <td style={getPrioridadStyle(inc.prioridad)}>{inc.prioridad}</td>
                       <td style={getEstadoStyle(inc.estado)}>{inc.estado}</td>
-                      <td>{new Date(inc.created_at).toLocaleDateString()}</td>
+                      <td>{inc.created_at ? new Date(inc.created_at).toLocaleDateString() : "N/A"}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -156,40 +176,49 @@ function Dashboard() {
           {mostrarTabla && (
             <div style={styles.cardList}>
               <h3 style={styles.cardTitle}>📋 Todos los Activos ({activos.length})</h3>
-              <table style={styles.tablaActivos}>
-                <thead>
-                  <tr style={styles.tableHeader}>
-                    <th>Código</th>
-                    <th>Tipo</th>
-                    <th>Marca</th>
-                    <th>Modelo</th>
-                    <th>Estado</th>
-                    <th>Ubicación</th>
-                    <th>Responsable</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {activos.map(a => (
-                    <tr key={a.id} style={styles.tableRow}>
-                      <td style={styles.tableCellCode}>{a.codigo}</td>
-                      <td>{a.tipo}</td>
-                      <td>{a.marca}</td>
-                      <td>{a.modelo}</td>
-                      <td style={getEstadoStyle(a.estado)}>{a.estado}</td>
-                      <td>{a.ubicacion}</td>
-                      <td>{a.responsable}</td>
+              {activos.length > 0 ? (
+                <table style={styles.tablaActivos}>
+                  <thead>
+                    <tr style={styles.tableHeader}>
+                      <th>Código</th>
+                      <th>Tipo</th>
+                      <th>Marca</th>
+                      <th>Modelo</th>
+                      <th>Estado</th>
+                      <th>Ubicación</th>
+                      <th>Responsable</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {activos.map(a => (
+                      <tr key={a.id} style={styles.tableRow}>
+                        <td style={styles.tableCellCode}>{a.codigo}</td>
+                        <td>{a.tipo}</td>
+                        <td>{a.marca}</td>
+                        <td>{a.modelo}</td>
+                        <td style={getEstadoStyle(a.estado)}>{a.estado}</td>
+                        <td>{a.ubicacion}</td>
+                        <td>{a.responsable}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <p style={{ color: "#94a3b8" }}>No hay activos</p>
+              )}
             </div>
           )}
         </>
-      ) : (
-        <p style={{ color: "#94a3b8" }}>Error al cargar datos</p>
+      )}
+
+      {!loading && !error && !estadisticas && (
+        <div style={styles.errorBox}>
+          <p>⚠️ No se pudieron cargar las estadísticas. Intenta recargar la página.</p>
+        </div>
       )}
     </div>
   );
+}
 }
 
 // Funciones utilitarias para estilos
@@ -259,6 +288,15 @@ const styles = {
     borderRadius: "8px",
     cursor: "pointer",
     fontWeight: "600"
+  },
+  errorBox: {
+    background: "#7f1d1d",
+    border: "2px solid #dc2626",
+    color: "#fca5a5",
+    padding: "15px",
+    borderRadius: "8px",
+    marginBottom: "20px",
+    fontSize: "14px"
   },
   cardsGrid: {
     display: "grid",
