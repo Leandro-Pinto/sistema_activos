@@ -6,6 +6,7 @@ import "react-toastify/dist/ReactToastify.css";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Activos from "./pages/Activos";
+import Usuarios from "./pages/Usuarios";
 import Incidencias from "./pages/Incidencias";
 import Navigation from "./components/Navigation";
 
@@ -63,6 +64,16 @@ function App() {
           element={
             <PrivateRoute>
               <Activos />
+            </PrivateRoute>
+          }
+        />
+
+        {/* GESTIÓN DE USUARIOS */}
+        <Route
+          path="/usuarios"
+          element={
+            <PrivateRoute>
+              <Usuarios />
             </PrivateRoute>
           }
         />

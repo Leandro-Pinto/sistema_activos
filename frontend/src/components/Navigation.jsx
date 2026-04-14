@@ -11,6 +11,7 @@ const Navigation = () => {
   const menuItems = [
     { path: "/dashboard", label: "📊 Dashboard", roles: ["admin", "tecnico", "usuario"] },
     { path: "/activos", label: "💻 Activos", roles: ["admin", "tecnico"] },
+    { path: "/usuarios", label: "👥 Usuarios", roles: ["admin"] },
     { path: "/incidencias", label: "⚠️ Incidencias", roles: ["admin", "tecnico", "usuario"] }
   ];
 
