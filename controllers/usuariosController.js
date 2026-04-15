@@ -44,8 +44,8 @@ exports.listarUsuarios = async (req, res) => {
 
     res.json(resultado.rows);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Error al listar usuarios" });
+    console.error("❌ Error al listar usuarios:", error.message);
+    res.status(500).json({ error: "Error al listar usuarios: " + error.message });
   }
 };
 
@@ -223,7 +223,7 @@ exports.estadisticasUsuarios = async (req, res) => {
       porRol: porRol.rows
     });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Error al obtener estadísticas" });
+    console.error("❌ Error al obtener estadísticas:", error.message);
+    res.status(500).json({ error: "Error al obtener estadísticas: " + error.message });
   }
 };

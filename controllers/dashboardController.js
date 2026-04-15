@@ -90,7 +90,7 @@ exports.estadisticas = async (req, res) => {
     });
 
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Error en estadísticas" });
+    console.error("❌ Error en estadísticas:", error.message);
+    res.status(500).json({ error: "Error en estadísticas: " + error.message });
   }
 };
