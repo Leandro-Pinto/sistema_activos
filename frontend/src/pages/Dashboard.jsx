@@ -6,7 +6,7 @@ import StatsCard from "../components/StatsCard";
 import { ChartActivosPorEstado, ChartActivosPorTipo, ChartIncidenciasPorPrioridad, ChartMarcasPorActivos } from "../components/Charts";
 
 function Dashboard() {
-  const { logout, usuario } = useAuth();
+  const { usuario } = useAuth();
 
   const [estadisticas, setEstadisticas] = useState(null);
   const [activos, setActivos] = useState([]);
@@ -68,9 +68,6 @@ function Dashboard() {
           <h1 style={styles.titulo}>📊 Dashboard Avanzado</h1>
           <p style={styles.subtitulo}>Bienvenido, {usuario?.nombre || usuario?.email}</p>
         </div>
-        <button onClick={logout} style={styles.btnLogout}>
-          🚪 Cerrar Sesión
-        </button>
       </div>
 
       {/* CONTENIDO PRINCIPAL */}
@@ -264,23 +261,6 @@ const styles = {
     fontSize: "14px",
     color: "#94a3b8",
     margin: "5px 0 0 0"
-  },
-  btnLogout: {
-    background: "#ef4444",
-    color: "white",
-    border: "none",
-    padding: "10px 20px",
-    borderRadius: "8px",
-    cursor: "pointer",
-    fontWeight: "600",
-    fontSize: "14px",
-    transition: "all 0.3s ease",
-    boxShadow: "0 2px 8px rgba(239, 68, 68, 0.3)",
-    ":hover": {
-      background: "#dc2626",
-      transform: "translateY(-2px)",
-      boxShadow: "0 4px 12px rgba(239, 68, 68, 0.4)"
-    }
   },
   errorBox: {
     background: "#7f1d1d",
