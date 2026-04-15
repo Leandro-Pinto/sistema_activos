@@ -19,6 +19,440 @@ const tiempoRelativo = (fecha) => {
   const ahora = new Date();
   const entonces = new Date(fecha);
   const segundos = Math.floor((ahora - entonces) / 1000);
+  let intervalo = segundos / 31536000;
+  if (intervalo > 1) return Math.floor(intervalo) + " años";
+  intervalo = segundos / 2592000;
+  if (intervalo > 1) return Math.floor(intervalo) + " meses";
+  intervalo = segundos / 86400;
+  if (intervalo > 1) return Math.floor(intervalo) + " días";
+  intervalo = segundos / 3600;
+  if (intervalo > 1) return Math.floor(intervalo) + " horas";
+  intervalo = segundos / 60;
+  if (intervalo > 1) return Math.floor(intervalo) + " min";
+  return Math.floor(segundos) + " seg";
+};
+
+function Usuarios() {
+  const { usuario: usuarioActual } = useAuth();
+  const [usuarios, setUsuarios] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [busqueda, setBusqueda] = useState("");
+  const [filtroRol, setFiltroRol] = useState("todos");
+  const [mostrarFormulario, setMostrarFormulario] = useState(false);
+  const [mostrarDetalles, setMostrarDetalles] = useState(null);
+  const [estadisticas, setEstadisticas] = useState(null);
+  const [form, setForm] = useState({
+    nombre: "",
+    email: "",
+    password: "",
+    rol: "usuario"
+  });
+
+  const cargarUsuarios = async () => {
+    try {
+      setLoading(true);
+      const data = await api("/usuarios");
+      setUsuarios(Array.isArray(data) ? data : []);
+    } catch (error) {
+      toast.error("Error al cargar usuarios");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const cargarEstadisticas = async () => {
+    try {
+      const data = await api("/usuarios/estadisticas");
+      setEstadisticas(data);
+    } catch (error) {
+      console.log("Error en estadísticas");
+    }
+  };
+
+  useEffect(() => {
+    if (usuarioActual?.rol === "admin") {
+      cargarUsuarios();
+      cargarEstadisticas();
+    }
+  }, [usuarioActual]);
+
+  const handleChange = (e) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  const guardarUsuario = async (e) => {
+    e.preventDefault();
+    if (!form.nombre || !form.email || !form.password) {
+      toast.warning("Completa todos los campos");
+      return;
+    }
+    try {
+      await api("/usuarios", "POST", form);
+      toast.success("Usuario creado correctamente");
+      setForm({ nombre: "", email: "", password: "", rol: "usuario" });
+      setMostrarFormulario(false);
+      cargarUsuarios();
+      cargarEstadisticas();
+    } catch (error) {
+      toast.error(error.message || "Error al crear usuario");
+    }
+  };
+
+  const cambiarRol = async (userId, nuevoRol) => {
+    try {
+      await api(`/usuarios/${userId}/rol`, "PUT", { rol: nuevoRol });
+      toast.success("Rol actualizado");
+      cargarUsuarios();
+      cargarEstadisticas();
+    } catch (error) {
+      toast.error(error.message || "Error al cambiar rol");
+    }
+  };
+
+  const eliminarUsuario = async (userId) => {
+    if (!window.confirm("¿Estás seguro?")) return;
+    try {
+      await api(`/usuarios/${userId}`, "DELETE");
+      toast.success("Usuario eliminado");
+      cargarUsuarios();
+      cargarEstadisticas();
+    } catch (error) {
+      toast.error(error.message || "Error al eliminar");
+    }
+  };
+
+  const usuariosFiltrados = usuarios.filter(u => {
+    const cumpleBusqueda = u.nombre?.toLowerCase().includes(busqueda.toLowerCase()) ||
+                          u.email?.toLowerCase().includes(busqueda.toLowerCase());
+    const cumpleRol = filtroRol === "todos" || u.rol === filtroRol;
+    return cumpleBusqueda && cumpleRol;
+  });
+
+  if (usuarioActual?.rol !== "admin") {
+    return (
+      <div style={{ padding: "20px", textAlign: "center" }}>
+        <h2>Acceso Denegado</h2>
+        <p>Solo administradores pueden acceder a esta sección.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ padding: "20px", backgroundColor: "#f8f9fa", minHeight: "100vh" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+        <h1 style={{ margin: 0, fontSize: "28px", color: "#2c3e50" }}>Gestión de Usuarios</h1>
+        <button onClick={() => setMostrarFormulario(true)} style={{
+          padding: "10px 20px",
+          backgroundColor: "#27ae60",
+          color: "white",
+          border: "none",
+          borderRadius: "4px",
+          cursor: "pointer",
+          fontWeight: "bold"
+        }}>
+          + Nuevo Usuario
+        </button>
+      </div>
+
+      {estadisticas && (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))", gap: "10px", marginBottom: "20px" }}>
+          {[
+            { label: "Total", valor: estadisticas.total },
+            { label: "Esta Semana", valor: estadisticas.ultimaSemana },
+            { label: "Este Mes", valor: estadisticas.estesMes },
+            { label: "Activos Hoy", valor: estadisticas.activos }
+          ].map((stat, idx) => (
+            <div key={idx} style={{
+              backgroundColor: "white",
+              padding: "15px",
+              borderRadius: "8px",
+              textAlign: "center",
+              boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
+            }}>
+              <div style={{ fontSize: "12px", color: "#7f8c8d" }}>{stat.label}</div>
+              <div style={{ fontSize: "24px", fontWeight: "bold", color: "#2c3e50" }}>{stat.valor}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 120px auto", gap: "10px", marginBottom: "20px" }}>
+        <input
+          type="text"
+          placeholder="Buscar por nombre o email..."
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+          style={{ padding: "10px", border: "1px solid #ddd", borderRadius: "4px" }}
+        />
+        <select
+          value={filtroRol}
+          onChange={(e) => setFiltroRol(e.target.value)}
+          style={{ padding: "10px", border: "1px solid #ddd", borderRadius: "4px", backgroundColor: "white" }}
+        >
+          <option value="todos">Todos</option>
+          <option value="admin">Admin</option>
+          <option value="tecnico">Técnico</option>
+          <option value="usuario">Usuario</option>
+        </select>
+        <span style={{ color: "#7f8c8d", fontSize: "13px", alignSelf: "center" }}>
+          {usuariosFiltrados.length} de {usuarios.length}
+        </span>
+      </div>
+
+      {mostrarFormulario && (
+        <div style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: "rgba(0,0,0,0.5)",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          zIndex: 1000
+        }} onClick={() => setMostrarFormulario(false)}>
+          <div style={{
+            backgroundColor: "white",
+            borderRadius: "8px",
+            padding: "20px",
+            maxWidth: "500px",
+            width: "90%"
+          }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "20px" }}>
+              <h2 style={{ margin: 0 }}>Crear Usuario</h2>
+              <button onClick={() => setMostrarFormulario(false)} style={{
+                background: "none",
+                border: "none",
+                fontSize: "24px",
+                cursor: "pointer"
+              }}>✕</button>
+            </div>
+            <form onSubmit={guardarUsuario}>
+              <div style={{ marginBottom: "15px" }}>
+                <label>Nombre *</label>
+                <input
+                  type="text"
+                  name="nombre"
+                  value={form.nombre}
+                  onChange={handleChange}
+                  required
+                  style={{ width: "100%", padding: "8px", marginTop: "5px", border: "1px solid #ddd", borderRadius: "4px", boxSizing: "border-box" }}
+                />
+              </div>
+              <div style={{ marginBottom: "15px" }}>
+                <label>Email *</label>
+                <input
+                  type="email"
+                  name="email"
+                  value={form.email}
+                  onChange={handleChange}
+                  required
+                  style={{ width: "100%", padding: "8px", marginTop: "5px", border: "1px solid #ddd", borderRadius: "4px", boxSizing: "border-box" }}
+                />
+              </div>
+              <div style={{ marginBottom: "15px" }}>
+                <label>Contraseña *</label>
+                <input
+                  type="password"
+                  name="password"
+                  value={form.password}
+                  onChange={handleChange}
+                  required
+                  style={{ width: "100%", padding: "8px", marginTop: "5px", border: "1px solid #ddd", borderRadius: "4px", boxSizing: "border-box" }}
+                />
+              </div>
+              <div style={{ marginBottom: "20px" }}>
+                <label>Rol</label>
+                <select
+                  name="rol"
+                  value={form.rol}
+                  onChange={handleChange}
+                  style={{ width: "100%", padding: "8px", marginTop: "5px", border: "1px solid #ddd", borderRadius: "4px", boxSizing: "border-box" }}
+                >
+                  <option value="usuario">Usuario</option>
+                  <option value="tecnico">Técnico</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+              <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
+                <button type="submit" style={{
+                  padding: "10px 20px",
+                  backgroundColor: "#27ae60",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "4px",
+                  cursor: "pointer"
+                }}>Crear</button>
+                <button type="button" onClick={() => setMostrarFormulario(false)} style={{
+                  padding: "10px 20px",
+                  backgroundColor: "#95a5a6",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "4px",
+                  cursor: "pointer"
+                }}>Cancelar</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {mostrarDetalles && (
+        <div style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: "rgba(0,0,0,0.5)",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          zIndex: 1000
+        }} onClick={() => setMostrarDetalles(null)}>
+          <div style={{
+            backgroundColor: "white",
+            borderRadius: "8px",
+            padding: "20px",
+            maxWidth: "500px",
+            width: "90%"
+          }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "20px" }}>
+              <h2 style={{ margin: 0 }}>Detalles del Usuario</h2>
+              <button onClick={() => setMostrarDetalles(null)} style={{
+                background: "none",
+                border: "none",
+                fontSize: "24px",
+                cursor: "pointer"
+              }}>✕</button>
+            </div>
+            <div style={{ marginBottom: "20px" }}>
+              <div style={{ marginBottom: "10px", paddingBottom: "10px", borderBottom: "1px solid #ecf0f1" }}>
+                <strong>Nombre:</strong> {mostrarDetalles.nombre}
+              </div>
+              <div style={{ marginBottom: "10px", paddingBottom: "10px", borderBottom: "1px solid #ecf0f1" }}>
+                <strong>Email:</strong> {mostrarDetalles.email}
+              </div>
+              <div style={{ marginBottom: "10px", paddingBottom: "10px", borderBottom: "1px solid #ecf0f1" }}>
+                <strong>Rol:</strong> {mostrarDetalles.rol}
+              </div>
+              <div style={{ marginBottom: "10px", paddingBottom: "10px", borderBottom: "1px solid #ecf0f1" }}>
+                <strong>Creado:</strong> <span title={formatearFecha(mostrarDetalles.fecha_creacion)}>{tiempoRelativo(mostrarDetalles.fecha_creacion)}</span>
+              </div>
+              <div style={{ marginBottom: "10px", paddingBottom: "10px", borderBottom: "1px solid #ecf0f1" }}>
+                <strong>Actualizado:</strong> <span title={formatearFecha(mostrarDetalles.ultima_actualizacion)}>{mostrarDetalles.ultima_actualizacion ? tiempoRelativo(mostrarDetalles.ultima_actualizacion) : "-"}</span>
+              </div>
+              <div>
+                <strong>Último Login:</strong> <span title={formatearFecha(mostrarDetalles.ultimo_login)}>{mostrarDetalles.ultimo_login ? tiempoRelativo(mostrarDetalles.ultimo_login) : "Nunca"}</span>
+              </div>
+            </div>
+            <button onClick={() => setMostrarDetalles(null)} style={{
+              width: "100%",
+              padding: "10px",
+              backgroundColor: "#95a5a6",
+              color: "white",
+              border: "none",
+              borderRadius: "4px",
+              cursor: "pointer"
+            }}>Cerrar</button>
+          </div>
+        </div>
+      )}
+
+      <div style={{ backgroundColor: "white", borderRadius: "8px", boxShadow: "0 2px 8px rgba(0,0,0,0.1)", overflow: "hidden" }}>
+        {loading ? (
+          <p style={{ textAlign: "center", padding: "20px", color: "#7f8c8d" }}>Cargando...</p>
+        ) : usuariosFiltrados.length > 0 ? (
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead>
+              <tr style={{ backgroundColor: "#34495e", color: "white" }}>
+                <th style={{ padding: "12px", textAlign: "left" }}>Nombre</th>
+                <th style={{ padding: "12px", textAlign: "left" }}>Email</th>
+                <th style={{ padding: "12px", textAlign: "left" }}>Rol</th>
+                <th style={{ padding: "12px", textAlign: "left" }}>Creado</th>
+                <th style={{ padding: "12px", textAlign: "left" }}>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {usuariosFiltrados.map((u) => (
+                <tr key={u.id} style={{ borderBottom: "1px solid #ecf0f1" }}>
+                  <td style={{ padding: "12px" }}>{u.nombre}</td>
+                  <td style={{ padding: "12px" }}>{u.email}</td>
+                  <td style={{ padding: "12px" }}>
+                    <select
+                      value={u.rol}
+                      onChange={(e) => cambiarRol(u.id, e.target.value)}
+                      style={{
+                        padding: "4px",
+                        border: "1px solid #ddd",
+                        borderRadius: "4px",
+                        backgroundColor: u.rol === "admin" ? "#ffcccc" : u.rol === "tecnico" ? "#cce5ff" : "#f0f0f0",
+                        cursor: "pointer"
+                      }}
+                    >
+                      <option value="usuario">Usuario</option>
+                      <option value="tecnico">Técnico</option>
+                      <option value="admin">Admin</option>
+                    </select>
+                  </td>
+                  <td style={{ padding: "12px" }} title={formatearFecha(u.fecha_creacion)}>
+                    {tiempoRelativo(u.fecha_creacion)}
+                  </td>
+                  <td style={{ padding: "12px", display: "flex", gap: "5px" }}>
+                    <button onClick={() => setMostrarDetalles(u)} style={{
+                      padding: "5px 10px",
+                      backgroundColor: "#3498db",
+                      color: "white",
+                      border: "none",
+                      borderRadius: "4px",
+                      cursor: "pointer",
+                      fontSize: "12px"
+                    }}>Ver</button>
+                    <button onClick={() => eliminarUsuario(u.id)} style={{
+                      padding: "5px 10px",
+                      backgroundColor: "#e74c3c",
+                      color: "white",
+                      border: "none",
+                      borderRadius: "4px",
+                      cursor: "pointer",
+                      fontSize: "12px"
+                    }}>Eliminar</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          <p style={{ textAlign: "center", padding: "20px", color: "#7f8c8d" }}>No hay usuarios</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export default Usuarios;
+import { useEffect, useState } from "react";
+import { toast } from "react-toastify";
+import api from "../services/api";
+import { useAuth } from "../context/AuthContext";
+
+const formatearFecha = (fecha) => {
+  if (!fecha) return "-";
+  return new Date(fecha).toLocaleDateString("es-ES", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+};
+
+const tiempoRelativo = (fecha) => {
+  if (!fecha) return "-";
+  const ahora = new Date();
+  const entonces = new Date(fecha);
+  const segundos = Math.floor((ahora - entonces) / 1000);
   
   let intervalo = segundos / 31536000;
   if (intervalo > 1) return Math.floor(intervalo) + " años";
