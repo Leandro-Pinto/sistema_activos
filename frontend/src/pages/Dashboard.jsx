@@ -66,12 +66,11 @@ function Dashboard() {
       <div style={styles.header}>
         <div>
           <h1 style={styles.titulo}>📊 Dashboard Avanzado</h1>
-          <p style={styles.subtitulo}>Bienvenido, {usuario?.email}</p>
+          <p style={styles.subtitulo}>Bienvenido, {usuario?.nombre || usuario?.email}</p>
         </div>
-        <div style={styles.headerRight}>
-          <span style={styles.rol}>👤 {usuario?.rol.toUpperCase()}</span>
-          <button onClick={logout} style={styles.btnLogout}>Cerrar Sesión</button>
-        </div>
+        <button onClick={logout} style={styles.btnLogout}>
+          🚪 Cerrar Sesión
+        </button>
       </div>
 
       {/* CONTENIDO PRINCIPAL */}
@@ -266,26 +265,22 @@ const styles = {
     color: "#94a3b8",
     margin: "5px 0 0 0"
   },
-  headerRight: {
-    display: "flex",
-    gap: "15px",
-    alignItems: "center"
-  },
-  rol: {
-    background: "#1e293b",
-    padding: "8px 15px",
-    borderRadius: "8px",
-    fontSize: "12px",
-    fontWeight: "600"
-  },
   btnLogout: {
-    background: "#dc2626",
+    background: "#ef4444",
     color: "white",
     border: "none",
-    padding: "8px 15px",
+    padding: "10px 20px",
     borderRadius: "8px",
     cursor: "pointer",
-    fontWeight: "600"
+    fontWeight: "600",
+    fontSize: "14px",
+    transition: "all 0.3s ease",
+    boxShadow: "0 2px 8px rgba(239, 68, 68, 0.3)",
+    ":hover": {
+      background: "#dc2626",
+      transform: "translateY(-2px)",
+      boxShadow: "0 4px 12px rgba(239, 68, 68, 0.4)"
+    }
   },
   errorBox: {
     background: "#7f1d1d",
