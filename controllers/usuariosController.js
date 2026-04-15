@@ -23,7 +23,7 @@ exports.registrarUsuario = async (req, res) => {
     const resultado = await pool.query(
       `INSERT INTO usuarios (nombre, email, password, rol)
        VALUES ($1, $2, $3, $4)
-       RETURNING id, nombre, email, rol, created_at`,
+       RETURNING id, nombre, email, rol`,
       [nombre, email, hash, rol || "usuario"]
     );
 
@@ -39,7 +39,7 @@ exports.registrarUsuario = async (req, res) => {
 exports.listarUsuarios = async (req, res) => {
   try {
     const resultado = await pool.query(
-      "SELECT id, nombre, email, rol, created_at FROM usuarios ORDER BY created_at DESC"
+      "SELECT id, nombre, email, rol FROM usuarios ORDER BY id DESC"
     );
 
     res.json(resultado.rows);
@@ -55,7 +55,7 @@ exports.obtenerUsuario = async (req, res) => {
     const { id } = req.params;
 
     const resultado = await pool.query(
-      "SELECT id, nombre, email, rol, created_at FROM usuarios WHERE id = $1",
+      "SELECT id, nombre, email, rol FROM usuarios WHERE id = $1",
       [id]
     );
 
