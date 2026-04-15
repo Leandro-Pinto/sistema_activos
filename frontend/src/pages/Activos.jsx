@@ -31,15 +31,15 @@ function Activos() {
       setActivos(Array.isArray(data) ? data : []);
     } catch (error) {
       toast.error("Error al cargar activos");
-      console.error(error);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
+    if (!usuario) return; // Esperar a que usuario esté cargado
     cargarActivos();
-  }, []);
+  }, [usuario]);
 
   // CAMBIOS EN FORMULARIO
   const handleChange = (e) => {

@@ -63,10 +63,10 @@ exports.estadisticas = async (req, res) => {
 
     // Últimas 5 incidencias
     const ultimasIncidencias = await pool.query(`
-      SELECT i.id, i.descripcion, i.estado, i.prioridad, a.codigo, i.created_at
+      SELECT i.id, i.descripcion, i.estado, i.prioridad, a.codigo
       FROM incidencias i
       JOIN activos a ON i.activo_id = a.id
-      ORDER BY i.created_at DESC
+      ORDER BY i.id DESC
       LIMIT 5
     `);
 

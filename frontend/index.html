@@ -5,6 +5,12 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>frontend</title>
+    <script>
+      // Suppress React DevTools suggestion message
+      if (typeof window !== 'undefined') {
+        window.__REACT_DEVTOOLS_GLOBAL_HOOK_FAIL_REASON = 'React DevTools is disabled in production mode';
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

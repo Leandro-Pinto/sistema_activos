@@ -28,7 +28,6 @@ function Usuarios() {
       setUsuarios(Array.isArray(data) ? data : []);
     } catch (error) {
       toast.error("Error al cargar usuarios");
-      console.error(error);
     } finally {
       setLoading(false);
     }
@@ -40,14 +39,15 @@ function Usuarios() {
       const data = await api("/usuarios/estadisticas");
       setEstadisticas(data);
     } catch (error) {
-      console.error(error);
+      // Error silencioso para estadísticas
     }
   };
 
   useEffect(() => {
+    if (!usuarioActual) return; // Esperar a que usuario esté cargado
     cargarUsuarios();
     cargarEstadisticas();
-  }, []);
+  }, [usuarioActual]);
 
   // CAMBIOS EN FORMULARIO
   const handleChange = (e) => {

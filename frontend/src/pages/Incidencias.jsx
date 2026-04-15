@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import api from "../services/api";
+import { useAuth } from "../context/AuthContext";
 
 function Incidencias() {
+  const { usuario } = useAuth();
   const [incidencias, setIncidencias] = useState([]);
   const [activos, setActivos] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -32,8 +34,9 @@ function Incidencias() {
   };
 
   useEffect(() => {
+    if (!usuario) return; // Esperar a que usuario esté cargado
     cargar();
-  }, []);
+  }, [usuario]);
 
   // HANDLE INPUT
   const handleChange = (e) => {

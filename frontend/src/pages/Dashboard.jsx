@@ -16,46 +16,45 @@ function Dashboard() {
 
   // CARGAR ESTADÍSTICAS
   useEffect(() => {
+    if (!usuario) return; // Esperar a que usuario esté cargado
+
     const cargarEstadisticas = async () => {
       try {
         setLoading(true);
         setError(null);
         const data = await api("/dashboard");
-        console.log("✅ Estadísticas cargadas:", data);
         
         // Validar estructura de datos
         if (data && data.resumen && data.graficas) {
           setEstadisticas(data);
         } else {
           setError("Datos incompletos del servidor");
-          console.error("Estructura incompleta:", data);
         }
       } catch (error) {
-        console.error("❌ Error al cargar estadísticas:", error);
         setError(error.message || "Error al cargar estadísticas");
-        toast.error("Error al cargar estadísticas: " + (error.message || "Intenta nuevamente"));
       } finally {
         setLoading(false);
       }
     };
 
     cargarEstadisticas();
-  }, []);
+  }, [usuario]);
 
   // CARGAR ACTIVOS
   useEffect(() => {
+    if (!usuario) return; // Esperar a que usuario esté cargado
+
     const cargarActivos = async () => {
       try {
         const data = await api("/activos");
         setActivos(Array.isArray(data) ? data : []);
       } catch (error) {
-        console.error("Error cargando activos:", error);
         setActivos([]);
       }
     };
 
     cargarActivos();
-  }, []);
+  }, [usuario]);
 
   if (!usuario) {
     return <p style={{ color: "#e2e8f0" }}>Cargando usuario...</p>;
