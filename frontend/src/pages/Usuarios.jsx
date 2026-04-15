@@ -45,8 +45,12 @@ function Usuarios() {
 
   useEffect(() => {
     if (!usuarioActual) return; // Esperar a que usuario esté cargado
-    cargarUsuarios();
-    cargarEstadisticas();
+    
+    // Solo cargar si es admin
+    if (usuarioActual.rol === "admin") {
+      cargarUsuarios();
+      cargarEstadisticas();
+    }
   }, [usuarioActual]);
 
   // CAMBIOS EN FORMULARIO

@@ -12,8 +12,8 @@ router.get("/estadisticas", auth, role(["admin"]), usuariosController.estadistic
 
 // LUEGO RUTAS GENÉRICAS Y CON PARÁMETROS
 
-// LISTAR TODOS LOS USUARIOS (SOLO ADMIN)
-router.get("/", auth, role(["admin"]), usuariosController.listarUsuarios);
+// LISTAR TODOS LOS USUARIOS (CUALQUIER USUARIO AUTENTICADO)
+router.get("/", auth, usuariosController.listarUsuarios);
 
 // OBTENER UN USUARIO (ADMIN O EL MISMO USUARIO)
 router.get("/:id", auth, usuariosController.obtenerUsuario);
