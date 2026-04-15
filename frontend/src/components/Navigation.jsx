@@ -9,10 +9,10 @@ const Navigation = () => {
   const isActive = (path) => location.pathname === path;
 
   const menuItems = [
-    { path: "/dashboard", label: "📊 Dashboard", roles: ["admin", "tecnico", "usuario"] },
-    { path: "/activos", label: "💻 Activos", roles: ["admin", "tecnico"] },
-    { path: "/usuarios", label: "👥 Usuarios", roles: ["admin"] },
-    { path: "/incidencias", label: "⚠️ Incidencias", roles: ["admin", "tecnico", "usuario"] }
+    { path: "/dashboard", label: "Dashboard", roles: ["admin", "tecnico", "usuario"] },
+    { path: "/activos", label: "Activos", roles: ["admin", "tecnico"] },
+    { path: "/usuarios", label: "Usuarios", roles: ["admin"] },
+    { path: "/incidencias", label: "Incidencias", roles: ["admin", "tecnico", "usuario"] }
   ];
 
   return (
@@ -20,7 +20,7 @@ const Navigation = () => {
       <div style={styles.navContent}>
         {/* LOGO */}
         <div style={styles.logo} onClick={() => navigate("/dashboard")}>
-          🏢 Sistema de Activos
+          Sistema de Activos
         </div>
 
         {/* MENU */}
@@ -44,7 +44,7 @@ const Navigation = () => {
 
         {/* USUARIO Y LOGOUT */}
         <div style={styles.userSection}>
-          <span style={styles.userRole}>👤 {usuario?.rol}</span>
+          <span style={styles.userRole}>{usuario?.rol}</span>
           <button onClick={logout} style={styles.logoutBtn}>
             Salir
           </button>
